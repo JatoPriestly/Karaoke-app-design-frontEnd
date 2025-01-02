@@ -65,7 +65,7 @@ class MusicPlayer:
 
     def create_main_content(self):
         main_frame = ctk.CTkFrame(self.root, fg_color="#1a1a1a")
-        main_frame.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=0, pady=0)
+        main_frame.grid(row=0, column=1, rowspan=10, sticky="nsew", padx=0, pady=0)
 
         # Top navigation
         nav_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
@@ -148,23 +148,45 @@ class MusicPlayer:
             plays_label.pack(side="right", padx=10)
 
     def create_album_carousel(self, parent):
-        carousel_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        carousel_frame.pack(fill="x", pady=20)
+        # Create a frame to hold the canvas
+        carousel_container = ctk.CTkFrame(parent, fg_color="transparent")
+        carousel_container.pack(fill="x", pady=20)
 
-        # Sample album covers (using random images)
+        # Create a canvas for scrolling
+        canvas = tk.Canvas(carousel_container, bg="#1a1a1a", highlightthickness=0, height=180)
+        canvas.pack(side="left", fill="both", expand=True)
+
+        # Create a frame inside the canvas to hold the album items
+        carousel_frame = ctk.CTkFrame(canvas, fg_color="transparent")
+
+        # Add the frame to the canvas
+        canvas.create_window((0, 0), window=carousel_frame, anchor="nw")
+
+        # Populate the carousel with album items
         for i in range(8):
             album_frame = ctk.CTkFrame(carousel_frame, fg_color="transparent")
             album_frame.pack(side="left", padx=10)
-            
+
             # Load random image
             img_url = f"https://picsum.photos/150/150?random={i}"
             response = requests.get(img_url)
             img = Image.open(BytesIO(response.content))
             photo = ImageTk.PhotoImage(img)
-            
+
             label = ttk.Label(album_frame, image=photo)
-            label.image = photo
+            label.image = photo  # Store reference to avoid garbage collection
             label.pack()
+
+        # Update the canvas scroll region after adding all widgets
+        carousel_frame.update_idletasks()
+        canvas.config(scrollregion=canvas.bbox("all"))
+
+        # Enable mouse wheel scrolling for horizontal movement
+        def on_mouse_scroll(event, canvas=canvas):
+            canvas.xview_scroll(-1 * (event.delta // 120), "units")
+
+        canvas.bind_all("<MouseWheel>", on_mouse_scroll)
+
 
     def create_player_controls(self):
         player_frame = ctk.CTkFrame(self.root, height=100, fg_color="#282828")
